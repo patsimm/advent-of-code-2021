@@ -1,4 +1,5 @@
 import getStdin from "get-stdin";
+import _ from "lodash";
 
 const rawInput = await getStdin();
 
@@ -48,15 +49,15 @@ console.log(
     .reduce((prev, curr) => prev + curr, 0)
 );
 
-const lengths = [6, 2, 5, 5, 4, 5, 6, 3, 7, 6];
-
 const keys = ["a", "b", "c", "d", "e", "f", "g"] as const;
 const segmentTypes = ["A", "B", "C", "D", "E", "F", "G"] as const;
 
 type Key = typeof keys[number];
 type SegmentType = typeof segmentTypes[number];
 
-function findMapping(line: ReturnType<typeof parseLine>) {
+type Mapping = Record<SegmentType, Key>;
+
+function findMapping(line: ReturnType<typeof parseLine>): Mapping {
   const segments: Record<SegmentType, Key[]> = segmentTypes.reduce(
     (prev, curr) => {
       prev[curr] = [...keys];
@@ -117,7 +118,7 @@ function findMapping(line: ReturnType<typeof parseLine>) {
       return prev;
     }, {} as Partial<Record<Key, number>>);
     const excludeFromC = keys.filter((key) => keyCounts[key] === 3);
-    restrictToVal("C", excludeFromC);
+    excludeVal("C", excludeFromC);
   }
 
   function finished() {
@@ -156,10 +157,40 @@ function findMapping(line: ReturnType<typeof parseLine>) {
     A: segments.A[0],
     B: segments.B[0],
     C: segments.C[0],
+    D: segments.D[0],
     E: segments.E[0],
     F: segments.F[0],
     G: segments.G[0],
   };
 }
 
-lines.forEach((line) => console.log(findMapping(line)));
+const numberLitSegments: SegmentType[][] &
+  Record<0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9, SegmentType[]> = [
+  ["A", "B", "C", "E", "F", "G"], // 0
+  ["C", "F"], //1
+  ["A", "C", "D", "E", "G"], //2
+  ["A", "C", "D", "F", "G"], //3
+  ["B", "C", "D", "F"], //4
+  ["A", "B", "D", "F", "G"], //5
+  ["A", "B", "D", "E", "F", "G"], //6
+  ["A", "C", "F"], //7
+  ["A", "B", "C", "D", "E", "F", "G"], //8
+  ["A", "B", "C", "D", "F", "G"], //9
+];
+
+function findNumber(val: Key[], mapping: Mapping) {
+  return numberLitSegments.findIndex(
+    (litSegments) =>
+      litSegments.length === val.length &&
+      litSegments.every((segType) => val.includes(mapping[segType]))
+  );
+}
+
+const outputValues = lines.map((line) => {
+  const mapping = findMapping(line);
+  return Number.parseInt(
+    line.output.map((val) => findNumber(val, mapping)).join("")
+  );
+});
+
+console.log(outputValues.reduce((prev, curr) => prev + curr, 0));
